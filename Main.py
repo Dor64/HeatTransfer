@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from AboutWindow import AboutWindow
+from GraphWindow import GraphWindow
 
 
 class HeatTransfer(QWidget):
@@ -21,6 +22,7 @@ class HeatTransfer(QWidget):
         super().__init__()
         # add other window variables here
         self.about_window = AboutWindow()
+        self.graph_window = GraphWindow(self)
 
         style_path = Path(__file__).with_name("style.css")
         with open(style_path, "r", encoding="utf-8") as style_file:
@@ -152,6 +154,7 @@ class HeatTransfer(QWidget):
         self.start_button.setCheckable(True)
 
         self.graphs_button = QPushButton("Graphs")
+        self.graphs_button.clicked.connect(self.open_graph_window)
         self.about_button = QPushButton("About")
         self.about_button.clicked.connect(self.open_about_window)
 
@@ -191,6 +194,9 @@ class HeatTransfer(QWidget):
         bottom_layout.addLayout(right_controls_layout, 1)
 
         main_layout.addLayout(bottom_layout)
+
+    def open_graph_window(self):
+        self.graph_window.show()
 
     def open_about_window(self):
         self.about_window.show()
