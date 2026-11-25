@@ -13,12 +13,14 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from AboutWindow import AboutWindow
 
 
 class HeatTransfer(QWidget):
     def __init__(self):
         super().__init__()
         # add other window variables here
+        self.about_window = AboutWindow()
 
         style_path = Path(__file__).with_name("style.css")
         with open(style_path, "r", encoding="utf-8") as style_file:
@@ -151,6 +153,7 @@ class HeatTransfer(QWidget):
 
         self.graphs_button = QPushButton("Graphs")
         self.about_button = QPushButton("About")
+        self.about_button.clicked.connect(self.open_about_window)
 
         center_buttons_layout.addWidget(self.start_button)
         center_buttons_layout.addWidget(self.graphs_button)
@@ -188,6 +191,9 @@ class HeatTransfer(QWidget):
         bottom_layout.addLayout(right_controls_layout, 1)
 
         main_layout.addLayout(bottom_layout)
+
+    def open_about_window(self):
+        self.about_window.show()
 
 
 if __name__ == "__main__":
