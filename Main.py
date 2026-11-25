@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
+from Body import Body
 from PySide6.QtWidgets import (
     QApplication,
     QDoubleSpinBox,
@@ -27,6 +28,16 @@ class HeatTransfer(QWidget):
         style_path = Path(__file__).with_name("style.css")
         with open(style_path, "r", encoding="utf-8") as style_file:
             self.setStyleSheet(style_file.read())
+
+        # add other needed variables
+        self.body1 = None
+        self.body2 = None
+        self.dt = 0.05  # צעד זמן בשניות (50 אלפיות השנייה)
+
+        # initialize the timer
+        self.timer = QTimer()
+        self.timer.setInterval(50)
+        self.timer.timeout.connect(self.timer_method)    
 
         self.setupUI()
 
@@ -195,11 +206,79 @@ class HeatTransfer(QWidget):
 
         main_layout.addLayout(bottom_layout)
 
+        self.left_slider.valueChanged.connect(self.left_temperature_changed)
+        self.right_slider.valueChanged.connect(self.right_temperature_changed)
+        self.start_button.clicked.connect(self.start_stop_button_method)
+
     def open_graph_window(self):
         self.graph_window.show()
 
     def open_about_window(self):
         self.about_window.show()
+
+    def set_body_color(self, body_frame, temp):
+        red = int((temp / 200) * 255)
+        red = max(0, min(255, red))
+        body_frame.setStyleSheet(f"background-color: rgb({red}, 0, 0); border-radius: 10px;")
+
+    def left_temperature_changed(self):
+        temp = self.left_slider.value()
+        self.left_temp_label.setText(f"{temp:.1f} °C")
+        self.set_body_color(self.left_body_frame, temp)
+
+    def right_temperature_changed(self):
+        temp = self.right_slider.value()
+        self.right_temp_label.setText(f"{temp:.1f} °C")
+        self.set_body_color(self.right_body_frame, temp)
+
+    def start_stop_button_method(self):
+        if self.start_button.isChecked():
+            m1 = self.left_mass_spinbox.value()
+            c1 = self.left_hcap_spinbox.value()
+            t1 = self.left_slider.value()
+            self.body1 = Body(m1, c1, t1)
+
+            m2 = self.right_mass_spinbox.value()
+            c2 = self.right_hcap_spinbox.value()
+            t2 = self.right_slider.value()
+            self.body2 = Body(m2, c2, t2)
+
+            self.start_button.setText("Stop")
+            self.timer.start()
+        else:
+            self.timer.stop()
+            self.start_button.setText("Start")
+
+    def timer_method(self):
+        sigma = self.conductivity_spinbox.value()
+        t1 = self.body1.temperature
+        t2 = self.body2.temperature
+
+        # חישוב זרם החום וכמות החום בכל צעד זמן
+        i1 = sigma * (t2 - t1)
+        i2 = sigma * (t1 - t2)
+        dq1 = i1 * self.dt
+        dq2 = i2 * self.dt
+
+        # עדכון הגופים וקבלת הטמפרטורות החדשות
+        new_t1 = self.body1.add_heat(dq1)
+        new_t2 = self.body2.add_heat(dq2)
+
+        # עדכון הסליידרים בלי להפעיל את הסיגנל כדי לא לדרוס את הדיוק העשרוני
+        self.left_slider.blockSignals(True)
+        self.left_slider.setValue(int(round(new_t1)))
+        self.left_slider.blockSignals(False)
+
+        self.right_slider.blockSignals(True)
+        self.right_slider.setValue(int(round(new_t2)))
+        self.right_slider.blockSignals(False)
+
+        # עדכון הטמפרטורה המדויקת והצבע של שני הגופים
+        self.left_temp_label.setText(f"{new_t1:.1f} °C")
+        self.set_body_color(self.left_body_frame, new_t1)
+
+        self.right_temp_label.setText(f"{new_t2:.1f} °C")
+        self.set_body_color(self.right_body_frame, new_t2)         
 
 
 if __name__ == "__main__":
