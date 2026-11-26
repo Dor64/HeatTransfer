@@ -46,6 +46,20 @@ class HeatTransfer(QWidget):
         self.timer.setInterval(50)
         self.timer.timeout.connect(self.timer_method)    
 
+        self.body_materials = {
+         "Copper": 385.0,
+         "Aluminum": 897.0,
+         "Iron / Steel": 450.0,
+         "Lead": 128.0,
+         "Water": 4186.0,
+        }
+        self.bridge_materials = {
+         "Copper": 401.0,
+         "Aluminum": 237.0,
+         "Iron / Steel": 50.0,
+         "Glass": 1.0,
+        }
+
         self.setupUI()
 
     def setupUI(self):
@@ -169,6 +183,13 @@ class HeatTransfer(QWidget):
             ["Custom", "Copper", "Aluminum", "Iron / Steel", "Lead", "Water"]
         )
 
+        self.left_heater_spinbox = QDoubleSpinBox()
+        self.left_heater_spinbox.setRange(0.0, 10000.0)
+        self.left_heater_spinbox.setDecimals(1)
+        self.left_heater_spinbox.setValue(0.0)
+        self.left_heater_spinbox.setSingleStep(5.0)
+        self.left_heater_spinbox.setSuffix(" W")
+
         left_controls_layout.addWidget(QLabel("Temp."), 0, 0)
         left_controls_layout.addWidget(self.left_temp_label, 0, 1)
         left_controls_layout.addWidget(QLabel("Mass"), 1, 0)
@@ -177,6 +198,8 @@ class HeatTransfer(QWidget):
         left_controls_layout.addWidget(self.left_hcap_spinbox, 2, 1)
         left_controls_layout.addWidget(QLabel("Material"), 3, 0)
         left_controls_layout.addWidget(self.left_material_combo, 3, 1)
+        left_controls_layout.addWidget(QLabel("Heater"), 4, 0)
+        left_controls_layout.addWidget(self.left_heater_spinbox, 4, 1)
 
         bottom_layout.addLayout(left_controls_layout, 1)
 
@@ -230,6 +253,13 @@ class HeatTransfer(QWidget):
             ["Custom", "Copper", "Aluminum", "Iron / Steel", "Lead", "Water"]
         )
 
+        self.right_heater_spinbox = QDoubleSpinBox()
+        self.right_heater_spinbox.setRange(0.0, 10000.0)
+        self.right_heater_spinbox.setDecimals(1)
+        self.right_heater_spinbox.setValue(0.0)
+        self.right_heater_spinbox.setSingleStep(5.0)
+        self.right_heater_spinbox.setSuffix(" W")
+
         right_controls_layout.addWidget(QLabel("Temp."), 0, 0)
         right_controls_layout.addWidget(self.right_temp_label, 0, 1)
         right_controls_layout.addWidget(QLabel("Mass"), 1, 0)
@@ -238,6 +268,8 @@ class HeatTransfer(QWidget):
         right_controls_layout.addWidget(self.right_hcap_spinbox, 2, 1)
         right_controls_layout.addWidget(QLabel("Material"), 3, 0)
         right_controls_layout.addWidget(self.right_material_combo, 3, 1)
+        right_controls_layout.addWidget(QLabel("Heater"), 4, 0)
+        right_controls_layout.addWidget(self.right_heater_spinbox, 4, 1)
 
         bottom_layout.addLayout(right_controls_layout, 1)
 
@@ -246,6 +278,14 @@ class HeatTransfer(QWidget):
         self.left_slider.valueChanged.connect(self.left_temperature_changed)
         self.right_slider.valueChanged.connect(self.right_temperature_changed)
         self.start_button.clicked.connect(self.start_stop_button_method)
+
+        self.left_material_combo.currentTextChanged.connect(self.left_material_changed)
+        self.right_material_combo.currentTextChanged.connect(self.right_material_changed)
+        self.bridge_material_combo.currentTextChanged.connect(self.bridge_material_changed)
+
+        self.left_hcap_spinbox.valueChanged.connect(self.set_left_custom)
+        self.right_hcap_spinbox.valueChanged.connect(self.set_right_custom)
+        self.conductivity_spinbox.valueChanged.connect(self.set_bridge_custom)
 
     def open_graph_window(self):
         self.graph_window.show()
@@ -294,14 +334,16 @@ class HeatTransfer(QWidget):
 
     def timer_method(self):
         sigma = self.conductivity_spinbox.value()
+        p1 = self.left_heater_spinbox.value()
+        p2 = self.right_heater_spinbox.value()
         t1 = self.body1.temperature
         t2 = self.body2.temperature
 
         # חישוב זרם החום וכמות החום בכל צעד זמן
         i1 = sigma * (t2 - t1)
         i2 = sigma * (t1 - t2)
-        dq1 = i1 * self.dt
-        dq2 = i2 * self.dt
+        dq1 = (i1 + p1) * self.dt
+        dq2 = (i2 + p2) * self.dt
 
         # עדכון הגופים וקבלת הטמפרטורות החדשות
         new_t1 = self.body1.add_heat(dq1)
@@ -337,7 +379,40 @@ class HeatTransfer(QWidget):
                 self,
                 "Equilibrium Reached",
                 f"Thermal equilibrium reached at {new_t1:.1f} °C (after {self.current_time:.1f} s)."
-            )         
+            )
+
+    def left_material_changed(self, material):
+     if material in self.body_materials:
+         self.left_hcap_spinbox.blockSignals(True)
+         self.left_hcap_spinbox.setValue(self.body_materials[material])
+         self.left_hcap_spinbox.blockSignals(False)
+
+    def right_material_changed(self, material):
+        if material in self.body_materials:
+            self.right_hcap_spinbox.blockSignals(True)
+            self.right_hcap_spinbox.setValue(self.body_materials[material])
+            self.right_hcap_spinbox.blockSignals(False)
+
+    def bridge_material_changed(self, material):
+        if material in self.bridge_materials:
+            self.conductivity_spinbox.blockSignals(True)
+            self.conductivity_spinbox.setValue(self.bridge_materials[material])
+            self.conductivity_spinbox.blockSignals(False)
+
+    def set_left_custom(self):
+        self.left_material_combo.blockSignals(True)
+        self.left_material_combo.setCurrentText("Custom")
+        self.left_material_combo.blockSignals(False)
+
+    def set_right_custom(self):
+        self.right_material_combo.blockSignals(True)
+        self.right_material_combo.setCurrentText("Custom")
+        self.right_material_combo.blockSignals(False)
+
+    def set_bridge_custom(self):
+        self.bridge_material_combo.blockSignals(True)
+        self.bridge_material_combo.setCurrentText("Custom")
+        self.bridge_material_combo.blockSignals(False)                       
 
 
 if __name__ == "__main__":
