@@ -36,6 +36,7 @@ class HeatTransfer(QWidget):
         self.body1 = None
         self.body2 = None
         self.dt = 0.05  # צעד זמן בשניות (50 אלפיות השנייה)
+        self.anim_step = 0
         self.current_time = 0.0
         self.time_history = []
         self.body1_temp_history = []
@@ -129,7 +130,18 @@ class HeatTransfer(QWidget):
 
         self.bridge_frame = QFrame()
         self.bridge_frame.setObjectName("bridge_frame")
-        self.bridge_frame.setFixedHeight(22)
+        self.bridge_frame.setFixedHeight(38)
+
+        bridge_frame_layout = QHBoxLayout(self.bridge_frame)
+        bridge_frame_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.flow_arrow_label = QLabel("→ →")
+        self.flow_arrow_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.flow_arrow_label.setStyleSheet(
+            "background: transparent; color: white; font-weight: bold; font-size: 16px;"
+        )
+        bridge_frame_layout.addWidget(self.flow_arrow_label, alignment=Qt.AlignmentFlag.AlignCenter)
+
         bridge_column_layout.addWidget(self.bridge_frame)
 
         bridge_column_layout.addStretch(1)
@@ -287,6 +299,8 @@ class HeatTransfer(QWidget):
         self.right_hcap_spinbox.valueChanged.connect(self.set_right_custom)
         self.conductivity_spinbox.valueChanged.connect(self.set_bridge_custom)
 
+        self.update_bridge_visuals(self.left_slider.value(), self.right_slider.value())
+
     def open_graph_window(self):
         self.graph_window.show()
 
@@ -298,15 +312,42 @@ class HeatTransfer(QWidget):
         red = max(0, min(255, red))
         body_frame.setStyleSheet(f"background-color: rgb({red}, 0, 0); border-radius: 10px;")
 
+    def update_bridge_visuals(self, t1, t2, animate=False):
+     red1 = max(0, min(255, int((t1 / 200) * 255)))
+     red2 = max(0, min(255, int((t2 / 200) * 255)))
+
+     self.bridge_frame.setStyleSheet(
+         f"QFrame {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
+         f"stop:0 rgb({red1}, 0, 0), stop:1 rgb({red2}, 0, 0)); "
+         f"border: 1px solid #444; }}"
+     )
+
+     if abs(t1 - t2) < 0.1:
+         self.flow_arrow_label.setText("=")
+     elif t1 > t2:
+         if animate:
+             frames = ["→", "→ →", "→ → →"]
+             self.flow_arrow_label.setText(frames[(self.anim_step // 4) % 3])
+         else:
+             self.flow_arrow_label.setText("→ →")
+     else:
+         if animate:
+             frames = ["←", "← ←", "← ← ←"]
+             self.flow_arrow_label.setText(frames[(self.anim_step // 4) % 3])
+         else:
+             self.flow_arrow_label.setText("← ←")
+
     def left_temperature_changed(self):
         temp = self.left_slider.value()
         self.left_temp_label.setText(f"{temp:.1f} °C")
         self.set_body_color(self.left_body_frame, temp)
+        self.update_bridge_visuals(self.left_slider.value(), self.right_slider.value())
 
     def right_temperature_changed(self):
         temp = self.right_slider.value()
         self.right_temp_label.setText(f"{temp:.1f} °C")
         self.set_body_color(self.right_body_frame, temp)
+        self.update_bridge_visuals(self.left_slider.value(), self.right_slider.value())
 
     def start_stop_button_method(self):
         if self.start_button.isChecked():
@@ -369,6 +410,9 @@ class HeatTransfer(QWidget):
 
         self.right_temp_label.setText(f"{new_t2:.1f} °C")
         self.set_body_color(self.right_body_frame, new_t2)
+
+        self.anim_step += 1
+        self.update_bridge_visuals(new_t1, new_t2, animate=True)
 
         # עצירה אוטומטית כשהטמפרטורות משתוות
         if self.auto_stop_checkbox.isChecked() and abs(new_t1 - new_t2) < 0.1:
