@@ -33,6 +33,10 @@ class HeatTransfer(QWidget):
         self.body1 = None
         self.body2 = None
         self.dt = 0.05  # צעד זמן בשניות (50 אלפיות השנייה)
+        self.current_time = 0.0
+        self.time_history = []
+        self.body1_temp_history = []
+        self.body2_temp_history = []                        
 
         # initialize the timer
         self.timer = QTimer()
@@ -243,8 +247,14 @@ class HeatTransfer(QWidget):
             t2 = self.right_slider.value()
             self.body2 = Body(m2, c2, t2)
 
+            self.current_time = 0.0
+            self.time_history = [0.0]
+            self.body1_temp_history = [t1]
+            self.body2_temp_history = [t2]
+
             self.start_button.setText("Stop")
             self.timer.start()
+            
         else:
             self.timer.stop()
             self.start_button.setText("Start")
@@ -263,6 +273,11 @@ class HeatTransfer(QWidget):
         # עדכון הגופים וקבלת הטמפרטורות החדשות
         new_t1 = self.body1.add_heat(dq1)
         new_t2 = self.body2.add_heat(dq2)
+
+        self.current_time += self.dt
+        self.time_history.append(round(self.current_time, 3))
+        self.body1_temp_history.append(new_t1)
+        self.body2_temp_history.append(new_t2)
 
         # עדכון הסליידרים בלי להפעיל את הסיגנל כדי לא לדרוס את הדיוק העשרוני
         self.left_slider.blockSignals(True)
