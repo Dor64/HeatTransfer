@@ -5,6 +5,7 @@ from Body import Body
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QComboBox,
     QMessageBox,
     QDoubleSpinBox,
     QFrame,
@@ -88,6 +89,16 @@ class HeatTransfer(QWidget):
         conductivity_controls_layout.setContentsMargins(16, 0, 16, 4)
         conductivity_controls_layout.setSpacing(4)
 
+        self.bridge_material_label = QLabel("Bridge")
+        self.bridge_material_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        conductivity_controls_layout.addWidget(self.bridge_material_label)
+
+        self.bridge_material_combo = QComboBox()
+        self.bridge_material_combo.addItems(
+            ["Custom", "Copper", "Aluminum", "Iron / Steel", "Glass"]
+        )
+        conductivity_controls_layout.addWidget(self.bridge_material_combo)
+
         self.conductivity_label = QLabel("Conductivity")
         self.conductivity_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         conductivity_controls_layout.addWidget(self.conductivity_label)
@@ -153,12 +164,19 @@ class HeatTransfer(QWidget):
         self.left_hcap_spinbox.setValue(0.40)
         self.left_hcap_spinbox.setSuffix(" J/kg°C")
 
+        self.left_material_combo = QComboBox()
+        self.left_material_combo.addItems(
+            ["Custom", "Copper", "Aluminum", "Iron / Steel", "Lead", "Water"]
+        )
+
         left_controls_layout.addWidget(QLabel("Temp."), 0, 0)
         left_controls_layout.addWidget(self.left_temp_label, 0, 1)
         left_controls_layout.addWidget(QLabel("Mass"), 1, 0)
         left_controls_layout.addWidget(self.left_mass_spinbox, 1, 1)
         left_controls_layout.addWidget(QLabel("H. Cap."), 2, 0)
         left_controls_layout.addWidget(self.left_hcap_spinbox, 2, 1)
+        left_controls_layout.addWidget(QLabel("Material"), 3, 0)
+        left_controls_layout.addWidget(self.left_material_combo, 3, 1)
 
         bottom_layout.addLayout(left_controls_layout, 1)
 
@@ -207,12 +225,19 @@ class HeatTransfer(QWidget):
         self.right_hcap_spinbox.setValue(0.40)
         self.right_hcap_spinbox.setSuffix(" J/kg°C")
 
+        self.right_material_combo = QComboBox()
+        self.right_material_combo.addItems(
+            ["Custom", "Copper", "Aluminum", "Iron / Steel", "Lead", "Water"]
+        )
+
         right_controls_layout.addWidget(QLabel("Temp."), 0, 0)
         right_controls_layout.addWidget(self.right_temp_label, 0, 1)
         right_controls_layout.addWidget(QLabel("Mass"), 1, 0)
         right_controls_layout.addWidget(self.right_mass_spinbox, 1, 1)
         right_controls_layout.addWidget(QLabel("H. Cap."), 2, 0)
         right_controls_layout.addWidget(self.right_hcap_spinbox, 2, 1)
+        right_controls_layout.addWidget(QLabel("Material"), 3, 0)
+        right_controls_layout.addWidget(self.right_material_combo, 3, 1)
 
         bottom_layout.addLayout(right_controls_layout, 1)
 
