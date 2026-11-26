@@ -4,6 +4,8 @@ from PySide6.QtCore import Qt, QTimer
 from Body import Body
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QMessageBox,
     QDoubleSpinBox,
     QFrame,
     QGridLayout,
@@ -173,9 +175,15 @@ class HeatTransfer(QWidget):
         self.about_button = QPushButton("About")
         self.about_button.clicked.connect(self.open_about_window)
 
+        self.auto_stop_checkbox = QCheckBox("Auto-stop at equilibrium")
+        self.auto_stop_checkbox.setChecked(True)
+
         center_buttons_layout.addWidget(self.start_button)
         center_buttons_layout.addWidget(self.graphs_button)
         center_buttons_layout.addWidget(self.about_button)
+        center_buttons_layout.addWidget(
+            self.auto_stop_checkbox, alignment=Qt.AlignmentFlag.AlignHCenter
+        )
 
         bottom_layout.addLayout(center_buttons_layout)
 
@@ -293,7 +301,18 @@ class HeatTransfer(QWidget):
         self.set_body_color(self.left_body_frame, new_t1)
 
         self.right_temp_label.setText(f"{new_t2:.1f} °C")
-        self.set_body_color(self.right_body_frame, new_t2)         
+        self.set_body_color(self.right_body_frame, new_t2)
+
+        # עצירה אוטומטית כשהטמפרטורות משתוות
+        if self.auto_stop_checkbox.isChecked() and abs(new_t1 - new_t2) < 0.1:
+            self.timer.stop()
+            self.start_button.setChecked(False)
+            self.start_button.setText("Start")
+            QMessageBox.information(
+                self,
+                "Equilibrium Reached",
+                f"Thermal equilibrium reached at {new_t1:.1f} °C (after {self.current_time:.1f} s)."
+            )         
 
 
 if __name__ == "__main__":

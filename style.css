@@ -44,6 +44,13 @@ QComboBox:focus {
     border: 1px solid #4a90e2;
 }
 
+QCheckBox {
+    font-weight: 500;
+    color: #2c3e50;
+    spacing: 6px;
+    padding-top: 2px;
+}
+
 QPushButton {
     background-color: #ffffff;
     border: 1px solid #bfc7d1;
